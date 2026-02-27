@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yield Bearing Stablecoins — stablewatch</title>
+<meta property="og:title" content="Is this what Low-risk DeFi looks like?">
+<meta property="og:description" content="Interactive dashboard showing APY distribution of Yield Bearing Stablecoins by TVL">
+<style>
+@font-face {
+    font-family: 'saans';
+    src: url('https://stablewatch.io/_next/static/media/bd35f1b638241331-s.p.woff') format('woff');
+    font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+    font-family: 'saans';
+    src: url('https://stablewatch.io/_next/static/media/bea454fa485ed6df-s.p.woff') format('woff');
+    font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+    font-family: 'saans';
+    src: url('https://stablewatch.io/_next/static/media/83c52d4400cda6f9-s.p.woff') format('woff');
+    font-weight: 600; font-style: normal; font-display: swap;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg: #0F100F;
+    --surface: #171817;
+    --card: #1C1D1C;
+    --card-hover: #232423;
+    --gold: hsl(45, 100%, 50%);
+    --gold-dim: hsl(45, 80%, 38%);
+    --gold-glow: hsla(45, 100%, 50%, 0.15);
+    --grey-bar: #2A2B2A;
+    --grey-bar-hover: #353635;
+    --text: #FAFAF9;
+    --text-secondary: #B0B0AE;
+    --text-muted: #737372;
+    --border: #2A2B2A;
+    --radius: 12px;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'saans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    max-width: 740px;
+    width: 100%;
+}
+
+/* ── Loading ── */
+#loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 20px;
+}
+.loader-bar {
+    width: 200px;
+    height: 6px;
+    background: var(--card);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.loader-bar::after {
+    content: '';
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    animation: load 1.2s ease-in-out infinite;
+}
+@keyframes load {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+}
+.loader-text {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* ── Header ── */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+}
+.logo {
+    height: 22px;
+    opacity: 0.9;
+}
+.header-badge {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--card);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+}
+
+/* ── Hero ── */
+.hero { margin-bottom: 36px; }
+.hero h1 {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+}
+.hero h1 .quotes {
+    color: var(--gold);
+}
+.headline-stat {
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+.headline-stat strong {
+    color: var(--text);
+    font-weight: 600;
+}
+.headline-stat .pct {
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 19px;
+}
+.total-tvl {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+.total-tvl strong {
+    color: var(--text-secondary);
+}
+
+/* ── Bar ── */
+.bar-section { margin-bottom: 32px; }
+
+.bar-wrapper {
+    position: relative;
+    margin-bottom: 14px;
+}
+.bar {
+    display: flex;
+    height: 60px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: crosshair;
+    position: relative;
+}
+.seg {
+    height: 100%;
+    transition: background-color 0.35s ease, filter 0.35s ease;
+    position: relative;
+    min-width: 0;
+}
+.seg.below {
+    background: var(--grey-bar);
+}
+.seg.above {
+    background: var(--gold);
+}
+.seg:hover {
+    filter: brightness(1.2);
+    z-index: 2;
+}
+.seg::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.04);
+}
+
+/* Percentage overlays */
+.bar-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    pointer-events: none;
+    z-index: 5;
+}
+.bar-overlay-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: flex 0.35s ease;
+    overflow: hidden;
+}
+.bar-overlay-zone span {
+    font-size: 22px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.zone-below span { color: var(--text-secondary); }
+.zone-above span { color: var(--bg); }
+
+/* Threshold marker */
+.threshold-line {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--text);
+    z-index: 10;
+    transition: left 0.35s ease;
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(250,250,249,0.3);
+}
+.threshold-line::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--text);
+    border-radius: 50%;
+}
+.threshold-line::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--text);
+    border-radius: 50%;
+}
+
+/* Range labels */
+.range-labels {
+    display: flex;
+    gap: 4px;
+}
+.range-label {
+    text-align: center;
+    transition: flex 0.35s ease;
+    min-width: 0;
+}
+.range-label .rl-pct {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.range-label .rl-range {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.range-label.above .rl-pct { color: var(--gold); }
+
+/* ── Slider ── */
+.slider-section {
+    margin-bottom: 36px;
+    padding: 0 2px;
+}
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.slider-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.slider-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    background: linear-gradient(
+        to right,
+        var(--gold) 0%,
+        var(--gold) var(--fill, 50%),
+        var(--card) var(--fill, 50%),
+        var(--card) 100%
+    );
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--gold);
+    cursor: grab;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--gold-dim), 0 2px 8px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 1px var(--gold), 0 0 16px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.4);
+}
+input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--gold);
+    cursor: grab;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--gold-dim), 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ── Bottom stat ── */
+.bottom-stat {
+    text-align: center;
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+    padding: 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+.bottom-stat strong {
+    color: var(--gold);
+    font-weight: 600;
+}
+
+/* ── Tooltip ── */
+.tooltip {
+    position: fixed;
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    z-index: 100;
+    pointer-events: none;
+    min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+}
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.tooltip-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card-hover);
+}
+.tooltip-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+.tooltip-protocol {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 2px 0;
+}
+.tooltip-row .label { color: var(--text-muted); }
+.tooltip-row .value { font-weight: 500; font-variant-numeric: tabular-nums; }
+.tooltip-row .value.gold { color: var(--gold); }
+
+/* ── Asset Table ── */
+.table-section {
+    margin-bottom: 40px;
+}
+.table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.table-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.table-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--card);
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.asset-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.asset-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.asset-table th:nth-child(3),
+.asset-table th:nth-child(4),
+.asset-table th:nth-child(5) {
+    text-align: right;
+}
+.asset-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(42,43,42,0.5);
+    font-variant-numeric: tabular-nums;
+}
+.asset-table td:nth-child(3),
+.asset-table td:nth-child(4),
+.asset-table td:nth-child(5) {
+    text-align: right;
+}
+.asset-table tr {
+    transition: background 0.2s ease;
+}
+.asset-table tbody tr:hover {
+    background: var(--card);
+}
+.asset-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.asset-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card-hover);
+    flex-shrink: 0;
+    object-fit: cover;
+}
+.asset-name { font-weight: 500; }
+.asset-protocol {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.apy-val { font-weight: 500; }
+.apy-val.above-threshold { color: var(--gold); }
+.tvl-bar-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.tvl-mini-bar {
+    width: 50px;
+    height: 4px;
+    background: var(--card);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.tvl-mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+.tvl-mini-bar-fill.below { background: var(--text-muted); }
+.tvl-mini-bar-fill.above { background: var(--gold); }
+
+/* ── Footer ── */
+footer {
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.footer-left {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.footer-left a {
+    color: var(--gold-dim);
+    text-decoration: none;
+}
+.footer-left a:hover { color: var(--gold); }
+.footer-right {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Show more ── */
+.show-more-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.show-more-btn:hover {
+    background: var(--card);
+    color: var(--text-secondary);
+    border-color: var(--text-muted);
+}
+
+/* ── Dashboard hidden ── */
+#dashboard { display: none; }
+#dashboard.visible { display: block; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .hero h1 { font-size: 24px; }
+    .headline-stat { font-size: 15px; }
+    .headline-stat .pct { font-size: 17px; }
+    .bar { height: 48px; }
+    .bar-overlay-zone span { font-size: 18px; }
+    .slider-value { font-size: 18px; }
+    .bottom-stat { font-size: 16px; }
+    .asset-table th, .asset-table td { padding: 8px 6px; font-size: 12px; }
+    .tvl-mini-bar { display: none; }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+}
+.fade-up-d1 { animation-delay: 0.05s; }
+.fade-up-d2 { animation-delay: 0.15s; }
+.fade-up-d3 { animation-delay: 0.25s; }
+.fade-up-d4 { animation-delay: 0.35s; }
+.fade-up-d5 { animation-delay: 0.45s; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- Loading -->
+<div id="loading">
+    <img src="https://stablewatch.io/sw-circle-logo.svg" alt="" width="40" height="40" style="opacity:0.6">
+    <div class="loader-bar"></div>
+    <div class="loader-text">Fetching yield data...</div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+    <header class="fade-up">
+        <img src="https://stablewatch.io/stablewatchLogoFull.svg" alt="stablewatch" class="logo">
+        <span class="header-badge" id="asset-count">--</span>
+    </header>
+
+    <section class="hero fade-up fade-up-d1">
+        <h1>Is this what <span class="quotes">"Low‑risk DeFi"</span> looks like?</h1>
+        <p class="headline-stat">
+            <span class="pct" id="below-pct">--</span>% of YBS TVL earns under
+            <strong id="threshold-text-1">5.0</strong>% APY
+        </p>
+        <p class="total-tvl">
+            <strong id="total-tvl-display">$--</strong> in Yield Bearing Stablecoins tracked
+        </p>
+    </section>
+
+    <section class="bar-section fade-up fade-up-d2">
+        <div class="bar-wrapper">
+            <div class="bar" id="bar"></div>
+            <div class="bar-overlay">
+                <div class="bar-overlay-zone zone-below" id="overlay-below">
+                    <span id="bar-below-pct">--%</span>
+                </div>
+                <div class="bar-overlay-zone zone-above" id="overlay-above">
+                    <span id="bar-above-pct">--%</span>
+                </div>
+            </div>
+            <div class="threshold-line" id="threshold-line"></div>
+        </div>
+        <div class="range-labels">
+            <div class="range-label below" id="rl-below">
+                <div class="rl-range" id="rl-below-text">&lt;5.0% APY</div>
+            </div>
+            <div class="range-label above" id="rl-above">
+                <div class="rl-range" id="rl-above-text">&gt;5.0% APY</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="slider-section fade-up fade-up-d3">
+        <div class="slider-header">
+            <span class="slider-label">APY Threshold</span>
+            <span class="slider-value" id="slider-value">5.0%</span>
+        </div>
+        <input type="range" id="apy-slider" min="0" max="15" step="0.1" value="5">
+    </section>
+
+    <section class="bottom-stat fade-up fade-up-d4">
+        Only <strong id="above-pct">--</strong>% of TVL is earning
+        &gt;<span id="threshold-text-2">5.0</span>% APY.
+    </section>
+
+    <section class="table-section fade-up fade-up-d5">
+        <div class="table-header">
+            <span class="table-title">All Yield Bearing Stablecoins</span>
+            <span class="table-count" id="table-count">--</span>
+        </div>
+        <table class="asset-table">
+            <thead>
+                <tr>
+                    <th style="width:30px">#</th>
+                    <th>Asset</th>
+                    <th>APY</th>
+                    <th>TVL</th>
+                    <th>Share</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+        <button class="show-more-btn" id="show-more-btn" style="display:none">Show all</button>
+    </section>
+
+    <footer>
+        <div class="footer-left">
+            Data from <a href="https://stablewatch.io" target="_blank" rel="noopener">stablewatch.io</a>
+        </div>
+        <div class="footer-right" id="footer-time">--</div>
+    </footer>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+</div>
+
+<script>
+const API = 'https://api.stablewatch.io/api/pools?api_key=1e2ccf5a1f5987d27f765dca00d5478c';
+
+let pools = [];
+let totalTvl = 0;
+let maxTvlSingle = 0;
+let showAll = false;
+const INITIAL_SHOW = 15;
+
+async function init() {
+    try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error('API returned error');
+
+        pools = json.data
+            .filter(p => !p.hidden)
+            .filter(p => p.metrics?.apy?.current != null)
+            .filter(p => p.metrics?.tvl?.current > 0)
+            .filter(p => p.metrics.apy.current >= 0)
+            .map(p => ({
+                asset: p.asset,
+                protocol: p.protocol,
+                apy: p.metrics.apy.current,
+                tvl: p.metrics.tvl.current,
+                img: p.token?.image?.small || p.token?.image?.thumb || '',
+            }))
+            .sort((a, b) => a.apy - b.apy);
+
+        totalTvl = pools.reduce((s, p) => s + p.tvl, 0);
+        maxTvlSingle = Math.max(...pools.map(p => p.tvl));
+
+        renderBar();
+        renderTable();
+        updateThreshold(5);
+        bindSlider();
+
+        document.getElementById('asset-count').textContent = `${pools.length} assets tracked`;
+        document.getElementById('total-tvl-display').textContent = formatTvl(totalTvl);
+        document.getElementById('table-count').textContent = `${pools.length} assets`;
+        document.getElementById('footer-time').textContent = new Date().toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric'
+        });
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard').classList.add('visible');
+    } catch (err) {
+        document.getElementById('loading').innerHTML =
+            `<div style="color:var(--text-muted);text-align:center">
+                <p style="margin-bottom:8px">Failed to load data</p>
+                <p style="font-size:12px;opacity:0.6">${err.message}</p>
+            </div>`;
+    }
+}
+
+function renderBar() {
+    const bar = document.getElementById('bar');
+    const tooltip = document.getElementById('tooltip');
+
+    pools.forEach((pool, i) => {
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        const pct = (pool.tvl / totalTvl) * 100;
+        seg.style.width = pct + '%';
+        seg.dataset.apy = pool.apy;
+        seg.dataset.index = i;
+
+        seg.addEventListener('mouseenter', (e) => {
+            tooltip.innerHTML = `
+                <div class="tooltip-header">
+                    ${pool.img ? `<img class="tooltip-icon" src="${pool.img}" alt="">` : '<div class="tooltip-icon"></div>'}
+                    <div>
+                        <div class="tooltip-name">${pool.asset}</div>
+                        <div class="tooltip-protocol">${pool.protocol}</div>
+                    </div>
+                </div>
+                <div class="tooltip-row">
+                    <span class="label">APY</span>
+                    <span class="value gold">${pool.apy.toFixed(2)}%</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="label">TVL</span>
+                    <span class="value">${formatTvl(pool.tvl)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="label">Share</span>
+                    <span class="value">${pct.toFixed(2)}%</span>
+                </div>
+            `;
+            tooltip.style.display = 'block';
+        });
+        seg.addEventListener('mousemove', (e) => {
+            const x = e.clientX + 12;
+            const y = e.clientY - 10;
+            const rect = tooltip.getBoundingClientRect();
+            const maxX = window.innerWidth - rect.width - 8;
+            const maxY = window.innerHeight - rect.height - 8;
+            tooltip.style.left = Math.min(x, maxX) + 'px';
+            tooltip.style.top = Math.min(y, maxY) + 'px';
+        });
+        seg.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        bar.appendChild(seg);
+    });
+}
+
+function renderTable() {
+    const tbody = document.getElementById('table-body');
+    const sortedByTvl = [...pools].sort((a, b) => b.tvl - a.tvl);
+    const btn = document.getElementById('show-more-btn');
+
+    function render() {
+        const toShow = showAll ? sortedByTvl : sortedByTvl.slice(0, INITIAL_SHOW);
+        tbody.innerHTML = toShow.map((p, i) => {
+            const share = ((p.tvl / totalTvl) * 100);
+            const barW = (p.tvl / maxTvlSingle) * 100;
+            return `<tr>
+                <td style="color:var(--text-muted)">${i + 1}</td>
+                <td>
+                    <div class="asset-cell">
+                        ${p.img ? `<img class="asset-icon" src="${p.img}" alt="" loading="lazy">` : '<div class="asset-icon"></div>'}
+                        <div>
+                            <div class="asset-name">${p.asset}</div>
+                            <div class="asset-protocol">${p.protocol}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="apy-val" data-apy="${p.apy}">${p.apy.toFixed(2)}%</span></td>
+                <td>
+                    <div class="tvl-bar-cell">
+                        ${formatTvl(p.tvl)}
+                        <div class="tvl-mini-bar">
+                            <div class="tvl-mini-bar-fill" data-apy="${p.apy}" style="width:${barW}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${share.toFixed(2)}%</td>
+            </tr>`;
+        }).join('');
+
+        if (sortedByTvl.length > INITIAL_SHOW) {
+            btn.style.display = 'block';
+            btn.textContent = showAll
+                ? 'Show less'
+                : `Show all ${sortedByTvl.length} assets`;
+        }
+    }
+
+    btn.addEventListener('click', () => {
+        showAll = !showAll;
+        render();
+        updateTableColors(parseFloat(document.getElementById('apy-slider').value));
+    });
+
+    render();
+}
+
+function updateThreshold(threshold) {
+    let belowTvl = 0;
+    let thresholdPosition = 0;
+
+    pools.forEach(pool => {
+        if (pool.apy < threshold) belowTvl += pool.tvl;
+    });
+
+    const belowPct = totalTvl > 0 ? (belowTvl / totalTvl) * 100 : 0;
+    const abovePct = 100 - belowPct;
+    const belowRound = Math.round(belowPct);
+    const aboveRound = Math.round(abovePct);
+    const thresholdStr = threshold.toFixed(1);
+
+    // Headline stat
+    document.getElementById('below-pct').textContent = belowRound;
+    document.getElementById('above-pct').textContent = aboveRound;
+    document.getElementById('threshold-text-1').textContent = thresholdStr;
+    document.getElementById('threshold-text-2').textContent = thresholdStr;
+    document.getElementById('slider-value').textContent = thresholdStr + '%';
+
+    // Bar overlays
+    const overlayBelow = document.getElementById('overlay-below');
+    const overlayAbove = document.getElementById('overlay-above');
+    overlayBelow.style.flex = belowPct || 0.01;
+    overlayAbove.style.flex = abovePct || 0.01;
+    document.getElementById('bar-below-pct').textContent = belowRound + '%';
+    document.getElementById('bar-above-pct').textContent = aboveRound + '%';
+
+    // Hide tiny labels
+    document.getElementById('bar-below-pct').style.opacity = belowPct < 5 ? '0' : '1';
+    document.getElementById('bar-above-pct').style.opacity = abovePct < 5 ? '0' : '1';
+
+    // Threshold line position
+    const line = document.getElementById('threshold-line');
+    line.style.left = `calc(${belowPct}% - 1px)`;
+
+    // Range labels
+    const rlBelow = document.getElementById('rl-below');
+    const rlAbove = document.getElementById('rl-above');
+    rlBelow.style.flex = belowPct || 0.01;
+    rlAbove.style.flex = abovePct || 0.01;
+    document.getElementById('rl-below-text').textContent = `<${thresholdStr}% APY`;
+    document.getElementById('rl-above-text').textContent = `>${thresholdStr}% APY`;
+
+    // Segments color
+    document.querySelectorAll('.seg').forEach(seg => {
+        const apy = parseFloat(seg.dataset.apy);
+        if (apy < threshold) {
+            seg.classList.add('below');
+            seg.classList.remove('above');
+        } else {
+            seg.classList.remove('below');
+            seg.classList.add('above');
+        }
+    });
+
+    // Slider fill
+    const slider = document.getElementById('apy-slider');
+    const fillPct = ((threshold - parseFloat(slider.min)) / (parseFloat(slider.max) - parseFloat(slider.min))) * 100;
+    slider.style.setProperty('--fill', fillPct + '%');
+
+    // Table colors
+    updateTableColors(threshold);
+}
+
+function updateTableColors(threshold) {
+    document.querySelectorAll('.apy-val').forEach(el => {
+        const apy = parseFloat(el.dataset.apy);
+        el.classList.toggle('above-threshold', apy >= threshold);
+    });
+    document.querySelectorAll('.tvl-mini-bar-fill').forEach(el => {
+        const apy = parseFloat(el.dataset.apy);
+        el.classList.toggle('above', apy >= threshold);
+        el.classList.toggle('below', apy < threshold);
+    });
+}
+
+function bindSlider() {
+    const slider = document.getElementById('apy-slider');
+    slider.addEventListener('input', () => {
+        updateThreshold(parseFloat(slider.value));
+    });
+}
+
+function formatTvl(val) {
+    if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + 'B';
+    if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + 'M';
+    if (val >= 1e3) return '$' + (val / 1e3).toFixed(0) + 'K';
+    return '$' + val.toFixed(0);
+}
+
+init();
+</script>
+</body>
+</html>
