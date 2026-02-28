@@ -185,8 +185,8 @@ header {
     content: '';
     position: absolute;
     right: 0; top: 0; bottom: 0;
-    width: 1px;
-    background: rgba(255,255,255,0.04);
+    width: 2px;
+    background: rgba(255,255,255,0.1);
 }
 
 /* Percentage overlays */
@@ -284,11 +284,38 @@ header {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-.slider-value {
+.slider-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+#apy-input {
+    width: 64px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--gold);
     font-size: 20px;
     font-weight: 600;
     color: var(--gold);
+    font-family: inherit;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+    outline: none;
+    padding: 0 2px 2px;
+    -moz-appearance: textfield;
+}
+#apy-input::-webkit-inner-spin-button,
+#apy-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#apy-input:focus {
+    border-bottom-color: var(--text);
+}
+.slider-input-suffix {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gold);
 }
 
 input[type="range"] {
@@ -542,6 +569,100 @@ footer {
     border-color: var(--text-muted);
 }
 
+/* ── Share button ── */
+.share-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    transition: color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.share-btn:hover {
+    color: var(--gold);
+    background: var(--card-hover);
+}
+.share-btn svg {
+    width: 16px;
+    height: 16px;
+}
+.asset-table th:nth-child(6),
+.asset-table td:nth-child(6) {
+    text-align: center;
+    width: 36px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+/* ── Share modal ── */
+.share-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.share-modal {
+    position: relative;
+    max-width: 660px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+}
+.share-modal canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+}
+.share-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    z-index: 1;
+    line-height: 1;
+}
+.share-modal-close:hover {
+    color: var(--text);
+    background: var(--card-hover);
+}
+.share-download-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+.share-download-btn:hover {
+    filter: brightness(1.1);
+}
+
 /* ── Dashboard hidden ── */
 #dashboard { display: none; }
 #dashboard.visible { display: block; }
@@ -553,7 +674,7 @@ footer {
     .headline-stat .pct { font-size: 17px; }
     .bar { height: 48px; }
     .bar-overlay-zone span { font-size: 18px; }
-    .slider-value { font-size: 18px; }
+    #apy-input, .slider-input-suffix { font-size: 18px; }
     .bottom-stat { font-size: 16px; }
     .asset-table th, .asset-table td { padding: 8px 6px; font-size: 12px; }
     .tvl-mini-bar { display: none; }
@@ -597,7 +718,7 @@ footer {
         <h1>Is this what <span class="quotes">"Low‑risk DeFi"</span> looks like?</h1>
         <p class="headline-stat">
             <span class="pct" id="below-pct">--</span>% of YBS TVL earns under
-            <strong id="threshold-text-1">5.0</strong>% APY
+            <strong id="threshold-text-1">5.0</strong>% 7D APY
         </p>
         <p class="total-tvl">
             <strong id="total-tvl-display">$--</strong> in Yield Bearing Stablecoins tracked
@@ -619,25 +740,28 @@ footer {
         </div>
         <div class="range-labels">
             <div class="range-label below" id="rl-below">
-                <div class="rl-range" id="rl-below-text">&lt;5.0% APY</div>
+                <div class="rl-range" id="rl-below-text">&lt;5.0% 7D APY</div>
             </div>
             <div class="range-label above" id="rl-above">
-                <div class="rl-range" id="rl-above-text">&gt;5.0% APY</div>
+                <div class="rl-range" id="rl-above-text">&gt;5.0% 7D APY</div>
             </div>
         </div>
     </section>
 
     <section class="slider-section fade-up fade-up-d3">
         <div class="slider-header">
-            <span class="slider-label">APY Threshold</span>
-            <span class="slider-value" id="slider-value">5.0%</span>
+            <span class="slider-label">7D APY Threshold</span>
+            <div class="slider-input-wrap">
+                <input type="number" id="apy-input" min="0" max="15" step="0.1" value="5.0">
+                <span class="slider-input-suffix">%</span>
+            </div>
         </div>
         <input type="range" id="apy-slider" min="0" max="15" step="0.1" value="5">
     </section>
 
     <section class="bottom-stat fade-up fade-up-d4">
         Only <strong id="above-pct">--</strong>% of TVL is earning
-        &gt;<span id="threshold-text-2">5.0</span>% APY.
+        &gt;<span id="threshold-text-2">5.0</span>% 7D APY.
     </section>
 
     <section class="table-section fade-up fade-up-d5">
@@ -650,9 +774,10 @@ footer {
                 <tr>
                     <th style="width:30px">#</th>
                     <th>Asset</th>
-                    <th>APY</th>
+                    <th>7D APY</th>
                     <th>TVL</th>
                     <th>Share</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -668,6 +793,15 @@ footer {
     </footer>
 </div>
 
+<!-- Share Modal -->
+<div class="share-modal-backdrop" id="share-modal" style="display:none">
+    <div class="share-modal">
+        <button class="share-modal-close" id="share-modal-close">&times;</button>
+        <canvas id="share-canvas" width="1200" height="630"></canvas>
+        <button class="share-download-btn" id="share-download-btn">Download PNG</button>
+    </div>
+</div>
+
 <!-- Tooltip -->
 <div class="tooltip" id="tooltip"></div>
 
@@ -675,12 +809,64 @@ footer {
 
 <script>
 const API = 'https://api.stablewatch.io/api/pools?api_key=1e2ccf5a1f5987d27f765dca00d5478c';
+const ANALYTICS_URL = '/analytics';
 
 let pools = [];
 let totalTvl = 0;
 let maxTvlSingle = 0;
 let showAll = false;
 const INITIAL_SHOW = 15;
+
+// Timeseries cache: { timestamps: string[], pools: { [address]: { tvl: number[] } } }
+let timeseriesCache = null;
+
+async function fetchTimeseries() {
+    if (timeseriesCache) return timeseriesCache;
+
+    function parseTimeseries(html) {
+        const marker = 'timeseries\\":{';
+        const markerIdx = html.indexOf(marker);
+        if (markerIdx === -1) throw new Error('timeseries not found');
+
+        const statusMarker = '{\\"status\\":\\"success\\"';
+        const statusIdx = html.lastIndexOf(statusMarker, markerIdx);
+        if (statusIdx === -1) throw new Error('status marker not found');
+
+        let depth = 0, endIdx = statusIdx;
+        for (let i = statusIdx; i < html.length; i++) {
+            const ch = html[i];
+            if (ch === '\\' && html[i + 1] === '"') { i++; continue; }
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) { endIdx = i + 1; break; } }
+        }
+
+        const escaped = html.substring(statusIdx, endIdx);
+        const unescaped = escaped.replace(/\\"/g, '"');
+        const data = JSON.parse(unescaped);
+
+        if (data.timeseries?.timestamps && data.timeseries?.pools) {
+            return data.timeseries;
+        }
+        throw new Error('Invalid timeseries structure');
+    }
+
+    // Try relative URL first (works on same origin), then absolute as fallback
+    const urls = [ANALYTICS_URL, 'https://www.stablewatch.io/analytics'];
+    for (const url of urls) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const html = await res.text();
+            timeseriesCache = parseTimeseries(html);
+            return timeseriesCache;
+        } catch (e) {
+            console.warn(`Timeseries fetch failed for ${url}:`, e.message);
+        }
+    }
+
+    console.warn('All timeseries sources failed, using avg fallback');
+    return null;
+}
 
 async function init() {
     try {
@@ -691,14 +877,18 @@ async function init() {
 
         pools = json.data
             .filter(p => !p.hidden)
-            .filter(p => p.metrics?.apy?.current != null)
+            .filter(p => (p.metrics?.apy?.avg7d ?? p.metrics?.apy?.current) != null)
             .filter(p => p.metrics?.tvl?.current > 0)
-            .filter(p => p.metrics.apy.current >= 0)
+            .filter(p => (p.metrics?.apy?.avg7d ?? p.metrics?.apy?.current) >= 0)
             .map(p => ({
+                id: p.id,
                 asset: p.asset,
                 protocol: p.protocol,
-                apy: p.metrics.apy.current,
+                apy: p.metrics.apy.avg7d ?? p.metrics.apy.current,
                 tvl: p.metrics.tvl.current,
+                tvlAvg7d: p.metrics?.tvl?.avg7d ?? p.metrics.tvl.current,
+                tvlAvg30d: p.metrics?.tvl?.avg30d ?? p.metrics.tvl.current,
+                tvlAvg90d: p.metrics?.tvl?.avg90d ?? p.metrics.tvl.current,
                 img: p.token?.image?.small || p.token?.image?.thumb || '',
             }))
             .sort((a, b) => a.apy - b.apy);
@@ -708,6 +898,8 @@ async function init() {
 
         renderBar();
         renderTable();
+
+        // Default: 5% 7D APY threshold
         updateThreshold(5);
         bindSlider();
 
@@ -751,7 +943,7 @@ function renderBar() {
                     </div>
                 </div>
                 <div class="tooltip-row">
-                    <span class="label">APY</span>
+                    <span class="label">7D APY</span>
                     <span class="value gold">${pool.apy.toFixed(2)}%</span>
                 </div>
                 <div class="tooltip-row">
@@ -813,6 +1005,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td>${share.toFixed(2)}%</td>
+                <td><button class="share-btn" data-pool-idx="${pools.indexOf(p)}" title="Share card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button></td>
             </tr>`;
         }).join('');
 
@@ -833,32 +1026,34 @@ function renderTable() {
     render();
 }
 
-function updateThreshold(threshold) {
-    let belowTvl = 0;
-    let thresholdPosition = 0;
+function updateThreshold(apyThreshold) {
+    apyThreshold = Math.max(0, Math.min(15, apyThreshold));
 
-    pools.forEach(pool => {
-        if (pool.apy < threshold) belowTvl += pool.tvl;
-    });
+    // Calculate TVL below this APY threshold
+    let belowTvl = 0;
+    for (const pool of pools) {
+        if (pool.apy < apyThreshold) belowTvl += pool.tvl;
+    }
 
     const belowPct = totalTvl > 0 ? (belowTvl / totalTvl) * 100 : 0;
     const abovePct = 100 - belowPct;
     const belowRound = Math.round(belowPct);
     const aboveRound = Math.round(abovePct);
-    const thresholdStr = threshold.toFixed(1);
+    const thresholdStr = apyThreshold.toFixed(1);
 
     // Headline stat
     document.getElementById('below-pct').textContent = belowRound;
     document.getElementById('above-pct').textContent = aboveRound;
     document.getElementById('threshold-text-1').textContent = thresholdStr;
     document.getElementById('threshold-text-2').textContent = thresholdStr;
-    document.getElementById('slider-value').textContent = thresholdStr + '%';
+    const apyInput = document.getElementById('apy-input');
+    if (document.activeElement !== apyInput) {
+        apyInput.value = apyThreshold.toFixed(1);
+    }
 
     // Bar overlays
-    const overlayBelow = document.getElementById('overlay-below');
-    const overlayAbove = document.getElementById('overlay-above');
-    overlayBelow.style.flex = belowPct || 0.01;
-    overlayAbove.style.flex = abovePct || 0.01;
+    document.getElementById('overlay-below').style.flex = belowPct || 0.01;
+    document.getElementById('overlay-above').style.flex = abovePct || 0.01;
     document.getElementById('bar-below-pct').textContent = belowRound + '%';
     document.getElementById('bar-above-pct').textContent = aboveRound + '%';
 
@@ -866,22 +1061,18 @@ function updateThreshold(threshold) {
     document.getElementById('bar-below-pct').style.opacity = belowPct < 5 ? '0' : '1';
     document.getElementById('bar-above-pct').style.opacity = abovePct < 5 ? '0' : '1';
 
-    // Threshold line position
-    const line = document.getElementById('threshold-line');
-    line.style.left = `calc(${belowPct}% - 1px)`;
+    // Threshold line position — based on TVL percentage
+    document.getElementById('threshold-line').style.left = `calc(${belowPct}% - 1px)`;
 
     // Range labels
-    const rlBelow = document.getElementById('rl-below');
-    const rlAbove = document.getElementById('rl-above');
-    rlBelow.style.flex = belowPct || 0.01;
-    rlAbove.style.flex = abovePct || 0.01;
-    document.getElementById('rl-below-text').textContent = `<${thresholdStr}% APY`;
-    document.getElementById('rl-above-text').textContent = `>${thresholdStr}% APY`;
+    document.getElementById('rl-below').style.flex = belowPct || 0.01;
+    document.getElementById('rl-above').style.flex = abovePct || 0.01;
+    document.getElementById('rl-below-text').textContent = `<${thresholdStr}% 7D APY`;
+    document.getElementById('rl-above-text').textContent = `>${thresholdStr}% 7D APY`;
 
-    // Segments color
-    document.querySelectorAll('.seg').forEach(seg => {
-        const apy = parseFloat(seg.dataset.apy);
-        if (apy < threshold) {
+    // Segments color — based on APY comparison
+    document.querySelectorAll('.seg').forEach((seg, i) => {
+        if (pools[i].apy < apyThreshold) {
             seg.classList.add('below');
             seg.classList.remove('above');
         } else {
@@ -890,13 +1081,12 @@ function updateThreshold(threshold) {
         }
     });
 
-    // Slider fill
-    const slider = document.getElementById('apy-slider');
-    const fillPct = ((threshold - parseFloat(slider.min)) / (parseFloat(slider.max) - parseFloat(slider.min))) * 100;
-    slider.style.setProperty('--fill', fillPct + '%');
+    // Slider fill = APY position on 0-15 scale
+    const fillPct = (apyThreshold / 15) * 100;
+    document.getElementById('apy-slider').style.setProperty('--fill', fillPct + '%');
 
     // Table colors
-    updateTableColors(threshold);
+    updateTableColors(apyThreshold);
 }
 
 function updateTableColors(threshold) {
@@ -913,8 +1103,18 @@ function updateTableColors(threshold) {
 
 function bindSlider() {
     const slider = document.getElementById('apy-slider');
+    const apyInput = document.getElementById('apy-input');
+
     slider.addEventListener('input', () => {
         updateThreshold(parseFloat(slider.value));
+    });
+
+    apyInput.addEventListener('input', () => {
+        let val = parseFloat(apyInput.value);
+        if (isNaN(val)) return;
+        val = Math.max(0, Math.min(15, val));
+        slider.value = val;
+        updateThreshold(val);
     });
 }
 
@@ -923,6 +1123,409 @@ function formatTvl(val) {
     if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + 'M';
     if (val >= 1e3) return '$' + (val / 1e3).toFixed(0) + 'K';
     return '$' + val.toFixed(0);
+}
+
+// ── Share Modal ──
+let currentSharePool = null;
+
+function openShareModal(pool) {
+    currentSharePool = pool;
+    document.getElementById('share-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    renderShareCard(pool);
+}
+
+function closeShareModal() {
+    document.getElementById('share-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    currentSharePool = null;
+}
+
+document.getElementById('share-modal-close').addEventListener('click', closeShareModal);
+document.getElementById('share-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('share-modal')) closeShareModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('share-modal').style.display !== 'none') {
+        closeShareModal();
+    }
+});
+
+// Event delegation for share buttons in table
+document.getElementById('table-body').addEventListener('click', (e) => {
+    const btn = e.target.closest('.share-btn');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.poolIdx);
+    if (!isNaN(idx) && pools[idx]) openShareModal(pools[idx]);
+});
+
+// Download
+document.getElementById('share-download-btn').addEventListener('click', async () => {
+    const canvas = document.getElementById('share-canvas');
+    const name = `stablewatch-${(currentSharePool?.asset || 'card').toLowerCase().replace(/\s+/g, '-')}.png`;
+
+    function downloadBlob(cvs) {
+        cvs.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }, 'image/png');
+    }
+
+    try {
+        downloadBlob(canvas);
+    } catch (e) {
+        // Canvas tainted by cross-origin image — re-render without image
+        if (currentSharePool) {
+            await renderShareCard(currentSharePool, true);
+            downloadBlob(document.getElementById('share-canvas'));
+            // Re-render with image for display
+            renderShareCard(currentSharePool, false);
+        }
+    }
+});
+
+// ── Canvas Helpers ──
+function loadImage(src) {
+    return new Promise(async (resolve, reject) => {
+        // 1. Try fetch+blob (bypasses CORS taint if fetch allowed)
+        try {
+            const res = await fetch(src);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('fail')); };
+            img.src = url;
+            return;
+        } catch {}
+        // 2. Fallback: load WITHOUT crossOrigin (always works, but taints canvas)
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('fail'));
+        img.src = src;
+    });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// ── Smooth Chart Helper ──
+function drawSmoothChart(ctx, points, chartArea) {
+    if (points.length < 2) return;
+
+    const gold = 'hsl(45, 100%, 50%)';
+    const many = points.length > 6; // many points = line chart, few = bezier with dots
+
+    // Build the curve path
+    function traceCurve() {
+        ctx.moveTo(points[0].x, points[0].y);
+        if (many) {
+            // Many points: use lineTo for clean dense lines
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+        } else {
+            // Few points: smooth bezier
+            for (let i = 1; i < points.length; i++) {
+                const p0 = points[i - 1], p1 = points[i];
+                const dx = p1.x - p0.x;
+                ctx.bezierCurveTo(
+                    p0.x + dx * 0.33, p0.y,
+                    p1.x - dx * 0.33, p1.y,
+                    p1.x, p1.y
+                );
+            }
+        }
+    }
+
+    // Fill area with gradient
+    ctx.save();
+    ctx.beginPath();
+    traceCurve();
+    ctx.lineTo(points[points.length - 1].x, chartArea.y + chartArea.h);
+    ctx.lineTo(points[0].x, chartArea.y + chartArea.h);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, chartArea.y, 0, chartArea.y + chartArea.h);
+    grad.addColorStop(0, 'hsla(45, 100%, 50%, 0.25)');
+    grad.addColorStop(1, 'hsla(45, 100%, 50%, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    // Stroke line
+    ctx.save();
+    ctx.beginPath();
+    traceCurve();
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = many ? 2 : 2.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Dots for few data points, always dot on last point
+    if (!many) {
+        points.forEach(pt => {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = gold;
+            ctx.fill();
+            ctx.strokeStyle = '#0F100F';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    } else {
+        // Gold dot on last point (current TVL)
+        const last = points[points.length - 1];
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = gold;
+        ctx.fill();
+        ctx.strokeStyle = '#0F100F';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+// ── Canvas Card Rendering ──
+async function renderShareCard(pool, skipImage) {
+    const canvas = document.getElementById('share-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1200, H = 630;
+    const gold = 'hsl(45, 100%, 50%)';
+    const font = 'saans, system-ui, sans-serif';
+
+    await document.fonts.ready;
+
+    // ── Background ──
+    ctx.fillStyle = '#0F100F';
+    ctx.fillRect(0, 0, W, H);
+
+    // Border
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 1, 1, W - 2, H - 2, 24);
+    ctx.stroke();
+
+    // ── Top bar — branding ──
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `500 18px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('stablewatch', 60, 55);
+    ctx.textAlign = 'right';
+    ctx.fillText('stablewatch.io', W - 60, 55);
+
+    // ══════════════════════════════════════
+    // LEFT COLUMN (x: 60–480)
+    // ══════════════════════════════════════
+
+    // Token logo — large circle, centered at (160, 160), r=45
+    const logoCx = 160, logoCy = 155, logoR = 45;
+    let imgLoaded = false;
+    if (pool.img && !skipImage) {
+        try {
+            const img = await loadImage(pool.img);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(logoCx, logoCy, logoR, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(img, logoCx - logoR, logoCy - logoR, logoR * 2, logoR * 2);
+            ctx.restore();
+            imgLoaded = true;
+        } catch (e) {}
+    }
+    if (!imgLoaded) {
+        ctx.fillStyle = '#232423';
+        ctx.beginPath();
+        ctx.arc(logoCx, logoCy, logoR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FAFAF9';
+        ctx.font = `600 36px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pool.asset.charAt(0), logoCx, logoCy);
+    }
+    // Ring around logo
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(logoCx, logoCy, logoR + 1, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Asset name
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#FAFAF9';
+    ctx.font = `600 28px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(pool.asset, 60, 248);
+
+    // Protocol
+    ctx.fillStyle = '#737372';
+    ctx.font = `400 16px ${font}`;
+    ctx.fillText(pool.protocol, 60, 275);
+
+    // "Earns more APY than"
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 18px ${font}`;
+    ctx.fillText('Earns more APY than', 60, 325);
+
+    // Percentile calculation
+    const sorted = [...pools].sort((a, b) => a.apy - b.apy);
+    const idx = sorted.findIndex(p => p.asset === pool.asset && p.protocol === pool.protocol);
+    const percentile = Math.round((idx / pools.length) * 100);
+
+    // Percentile number — big gold
+    ctx.fillStyle = gold;
+    ctx.font = `600 60px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(percentile + '%', 60, 395);
+
+    // "of Yield Bearing Stablecoins"
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 16px ${font}`;
+    ctx.fillText('of Yield Bearing', 60, 425);
+    ctx.fillText('Stablecoins', 60, 447);
+
+    // ══════════════════════════════════════
+    // RIGHT COLUMN (x: 540–1140)
+    // ══════════════════════════════════════
+
+    // Fetch timeseries data (lazy, cached)
+    const ts = await fetchTimeseries();
+    const poolAddr = pool.id?.toLowerCase();
+    const poolTs = ts?.pools?.[poolAddr];
+
+    // Build chart data: full timeseries from Day 1 (first non-zero TVL)
+    let chartData = [];
+
+    if (poolTs?.tvl && ts.timestamps) {
+        let raw = [];
+        for (let i = 0; i < ts.timestamps.length; i++) {
+            if (poolTs.tvl[i] != null) {
+                raw.push({ value: poolTs.tvl[i] });
+            }
+        }
+        // Trim leading zeros — start from first non-zero TVL (Day 1)
+        const firstNonZero = raw.findIndex(d => d.value > 0);
+        if (firstNonZero >= 0) {
+            chartData = raw.slice(firstNonZero);
+        }
+    }
+
+    if (chartData.length < 3) {
+        // Fallback: synthetic from avg data (no labels — clean line)
+        chartData = [
+            { value: pool.tvlAvg90d },
+            { value: pool.tvlAvg30d },
+            { value: pool.tvlAvg7d },
+            { value: pool.tvl },
+        ];
+    }
+
+    // Chart header
+    ctx.fillStyle = '#737372';
+    ctx.font = `500 13px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.fillText('TVL', 350, 100);
+
+    ctx.fillStyle = gold;
+    ctx.font = `600 14px ${font}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(formatTvl(pool.tvl), 1140, 100);
+
+    // Chart area (wider — starts right after left column)
+    const chartX = 350, chartY = 115, chartW = 790, chartH = 320;
+
+    // Chart background
+    ctx.fillStyle = '#141514';
+    roundRect(ctx, chartX, chartY, chartW, chartH, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#1E1F1E';
+    ctx.lineWidth = 1;
+    roundRect(ctx, chartX, chartY, chartW, chartH, 12);
+    ctx.stroke();
+
+    // Map data to pixel coordinates
+    const values = chartData.map(d => d.value);
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const valRange = maxVal - minVal || 1;
+    const padYChart = chartH * 0.15;
+
+    const chartPoints = chartData.map((d, i) => {
+        const xPos = chartX + 30 + (i / Math.max(chartData.length - 1, 1)) * (chartW - 60);
+        const normalized = (d.value - minVal) / valRange;
+        const yPos = (chartY + chartH - padYChart) - normalized * (chartH - padYChart * 2);
+        return { x: xPos, y: yPos };
+    });
+
+    // Clip and draw chart
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, chartX, chartY, chartW, chartH, 12);
+    ctx.clip();
+    drawSmoothChart(ctx, chartPoints, { x: chartX, y: chartY, w: chartW, h: chartH });
+    ctx.restore();
+
+    // ── 3 stat tiles under chart ──
+    const byTvl = [...pools].sort((a, b) => b.tvl - a.tvl);
+    const tvlRank = byTvl.findIndex(p => p.asset === pool.asset && p.protocol === pool.protocol) + 1;
+
+    const tiles = [
+        { label: '7D APY', value: pool.apy.toFixed(2) + '%' },
+        { label: 'TVL', value: formatTvl(pool.tvl) },
+        { label: 'TVL Rank', value: '#' + tvlRank },
+    ];
+
+    const tileW = 242, tileH = 65, tileGap = 22;
+    const tileStartX = 350;
+    const tileY = 455;
+
+    tiles.forEach((tile, i) => {
+        const x = tileStartX + i * (tileW + tileGap);
+
+        ctx.fillStyle = '#1C1D1C';
+        roundRect(ctx, x, tileY, tileW, tileH, 10);
+        ctx.fill();
+        ctx.strokeStyle = '#2A2B2A';
+        ctx.lineWidth = 1;
+        roundRect(ctx, x, tileY, tileW, tileH, 10);
+        ctx.stroke();
+
+        ctx.fillStyle = '#737372';
+        ctx.font = `400 11px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(tile.label, x + tileW / 2, tileY + 22);
+
+        ctx.fillStyle = '#FAFAF9';
+        ctx.font = `600 18px ${font}`;
+        ctx.fillText(tile.value, x + tileW / 2, tileY + 46);
+    });
+
+    // Subtle branding
+    ctx.fillStyle = '#3A3A39';
+    ctx.font = `400 12px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('stablewatch.io', W / 2, H - 25);
 }
 
 init();
