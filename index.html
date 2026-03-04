@@ -809,7 +809,10 @@ footer {
 </div>
 
 <script>
+// TODO: move API key to server-side proxy (Cloudflare Worker / Vercel Edge Function)
 const API = 'https://api.stablewatch.io/api/pools?api_key=1e2ccf5a1f5987d27f765dca00d5478c';
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 const ANALYTICS_URL = '/analytics';
 
 let pools = [];
@@ -917,7 +920,7 @@ async function init() {
         document.getElementById('loading').innerHTML =
             `<div style="color:var(--text-muted);text-align:center">
                 <p style="margin-bottom:8px">Failed to load data</p>
-                <p style="font-size:12px;opacity:0.6">${err.message}</p>
+                <p style="font-size:12px;opacity:0.6">${esc(err.message)}</p>
             </div>`;
     }
 }
@@ -937,10 +940,10 @@ function renderBar() {
         seg.addEventListener('mouseenter', (e) => {
             tooltip.innerHTML = `
                 <div class="tooltip-header">
-                    ${pool.img ? `<img class="tooltip-icon" src="${pool.img}" alt="">` : '<div class="tooltip-icon"></div>'}
+                    ${pool.img ? `<img class="tooltip-icon" src="${esc(pool.img)}" alt="">` : '<div class="tooltip-icon"></div>'}
                     <div>
-                        <div class="tooltip-name">${pool.asset}</div>
-                        <div class="tooltip-protocol">${pool.protocol}</div>
+                        <div class="tooltip-name">${esc(pool.asset)}</div>
+                        <div class="tooltip-protocol">${esc(pool.protocol)}</div>
                     </div>
                 </div>
                 <div class="tooltip-row">
@@ -989,10 +992,10 @@ function renderTable() {
                 <td style="color:var(--text-muted)">${i + 1}</td>
                 <td>
                     <div class="asset-cell">
-                        ${p.img ? `<img class="asset-icon" src="${p.img}" alt="" loading="lazy">` : '<div class="asset-icon"></div>'}
+                        ${p.img ? `<img class="asset-icon" src="${esc(p.img)}" alt="" loading="lazy">` : '<div class="asset-icon"></div>'}
                         <div>
-                            <div class="asset-name">${p.asset}</div>
-                            <div class="asset-protocol">${p.protocol}</div>
+                            <div class="asset-name">${esc(p.asset)}</div>
+                            <div class="asset-protocol">${esc(p.protocol)}</div>
                         </div>
                     </div>
                 </td>
