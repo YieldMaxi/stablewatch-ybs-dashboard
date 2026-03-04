@@ -663,6 +663,25 @@ footer {
 .share-download-btn:hover {
     filter: brightness(1.1);
 }
+.share-twitter-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.share-twitter-btn:hover {
+    background: var(--card-hover);
+    border-color: var(--text-muted);
+}
 
 /* ── Dashboard hidden ── */
 #dashboard { display: none; }
@@ -712,7 +731,16 @@ footer {
 <div id="dashboard">
     <header class="fade-up">
         <img src="https://stablewatch.io/stablewatchLogoFull.svg" alt="stablewatch" class="logo">
-        <span class="header-badge" id="asset-count">--</span>
+        <div style="display:flex;align-items:center;gap:8px">
+            <span class="header-badge" id="asset-count">--</span>
+            <button class="share-btn" id="share-dashboard-btn" title="Share dashboard stats">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+            </button>
+        </div>
     </header>
 
     <section class="hero fade-up fade-up-d1">
@@ -788,7 +816,7 @@ footer {
 
     <footer>
         <div class="footer-left">
-            Data from <a href="https://stablewatch.io" target="_blank" rel="noopener">stablewatch.io</a>
+            Data from <a href="https://stablewatch.io" target="_blank" rel="noopener">stablewatch.io</a> &nbsp;&middot;&nbsp; Idea from <a href="https://vaults.fyi/" target="_blank" rel="noopener">vaults.fyi</a>
         </div>
         <div class="footer-right" id="footer-time">--</div>
     </footer>
@@ -800,6 +828,7 @@ footer {
         <button class="share-modal-close" id="share-modal-close">&times;</button>
         <canvas id="share-canvas" width="1200" height="630"></canvas>
         <button class="share-download-btn" id="share-download-btn">Download PNG</button>
+        <button class="share-twitter-btn" id="share-twitter-btn">Share on X</button>
     </div>
 </div>
 
@@ -1163,10 +1192,29 @@ document.getElementById('table-body').addEventListener('click', (e) => {
     if (!isNaN(idx) && pools[idx]) openShareModal(pools[idx]);
 });
 
+// Dashboard share button
+document.getElementById('share-dashboard-btn').addEventListener('click', () => {
+    currentSharePool = null;
+    document.getElementById('share-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    renderDashboardCard();
+});
+
+// Share on X
+document.getElementById('share-twitter-btn').addEventListener('click', () => {
+    const threshold = parseFloat(document.getElementById('apy-slider').value).toFixed(1);
+    const abovePct = document.getElementById('above-pct').textContent;
+    const text = currentSharePool
+        ? `Check out ${currentSharePool.asset} (${currentSharePool.protocol}) yield stats on the @staborwatch dashboard!`
+        : `Is this what "Low-risk DeFi" looks like?\n\nOnly ${abovePct}% of YBS TVL earns above ${threshold}% 7D APY.`;
+    const url = 'https://stablewatch.io';
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+});
+
 // Download
 document.getElementById('share-download-btn').addEventListener('click', async () => {
     const canvas = document.getElementById('share-canvas');
-    const name = `stablewatch-${(currentSharePool?.asset || 'card').toLowerCase().replace(/\s+/g, '-')}.png`;
+    const name = `stablewatch-${(currentSharePool?.asset || 'dashboard').toLowerCase().replace(/\s+/g, '-')}.png`;
 
     function downloadBlob(cvs) {
         cvs.toBlob((blob) => {
@@ -1526,6 +1574,243 @@ async function renderShareCard(pool, skipImage) {
     });
 
     // Subtle branding
+    ctx.fillStyle = '#3A3A39';
+    ctx.font = `400 12px ${font}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('stablewatch.io', W / 2, H - 25);
+}
+
+// ── Dashboard Share Card ──
+async function renderDashboardCard() {
+    const canvas = document.getElementById('share-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1200, H = 630;
+    const gold = 'hsl(45, 100%, 50%)';
+    const font = 'saans, system-ui, sans-serif';
+
+    await document.fonts.ready;
+
+    // Background
+    ctx.fillStyle = '#0F100F';
+    ctx.fillRect(0, 0, W, H);
+
+    // Border
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 1, 1, W - 2, H - 2, 24);
+    ctx.stroke();
+
+    // Get current threshold data
+    const threshold = parseFloat(document.getElementById('apy-slider').value);
+    const thresholdStr = threshold.toFixed(1);
+    let belowTvl = 0;
+    for (const pool of pools) {
+        if (pool.apy < threshold) belowTvl += pool.tvl;
+    }
+    const belowPct = totalTvl > 0 ? Math.round((belowTvl / totalTvl) * 100) : 0;
+    const abovePct = 100 - belowPct;
+
+    // ── Top bar — branding ──
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `500 18px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('stablewatch', 60, 55);
+
+    // Asset count badge
+    ctx.textAlign = 'right';
+    const badgeText = pools.length + ' assets tracked';
+    const badgeW = ctx.measureText(badgeText).width + 24;
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 1;
+    roundRect(ctx, W - 60 - badgeW, 38, badgeW, 26, 13);
+    ctx.stroke();
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 13px ${font}`;
+    ctx.fillText(badgeText, W - 60 - 12, 56);
+
+    // ── Headline ──
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#FAFAF9';
+    ctx.font = `600 34px ${font}`;
+    ctx.fillText('Is this what', 60, 120);
+    ctx.fillStyle = gold;
+    ctx.fillText('\u201CLow\u2011risk DeFi\u201D', 60 + ctx.measureText('Is this what ').width, 120);
+    const afterQuote = 60 + ctx.measureText('Is this what ').width + ctx.measureText('\u201CLow\u2011risk DeFi\u201D ').width;
+    ctx.fillStyle = '#FAFAF9';
+    ctx.fillText('looks like?', afterQuote, 120);
+
+    // Subhead stat
+    ctx.fillStyle = gold;
+    ctx.font = `600 19px ${font}`;
+    const pctText = belowPct + '%';
+    ctx.fillText(pctText, 60, 165);
+    const pctW = ctx.measureText(pctText).width;
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 17px ${font}`;
+    ctx.fillText(' of YBS TVL earns under ', 60 + pctW, 165);
+    const midW = ctx.measureText(' of YBS TVL earns under ').width;
+    ctx.fillStyle = '#FAFAF9';
+    ctx.font = `600 17px ${font}`;
+    ctx.fillText(thresholdStr + '%', 60 + pctW + midW, 165);
+    const thW = ctx.measureText(thresholdStr + '%').width;
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 17px ${font}`;
+    ctx.fillText(' 7D APY', 60 + pctW + midW + thW, 165);
+
+    // Total TVL
+    ctx.fillStyle = '#737372';
+    ctx.font = `400 14px ${font}`;
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `600 14px ${font}`;
+    const tvlStr = formatTvl(totalTvl);
+    ctx.fillText(tvlStr, 60, 195);
+    const tvlW = ctx.measureText(tvlStr).width;
+    ctx.fillStyle = '#737372';
+    ctx.font = `400 14px ${font}`;
+    ctx.fillText(' in Yield Bearing Stablecoins tracked', 60 + tvlW, 195);
+
+    // ── Distribution Bar ──
+    const barX = 60, barY = 230, barW = 1080, barH = 70, barR = 12;
+
+    // Below segment (grey)
+    const belowW = Math.max(barW * (belowPct / 100), belowPct > 0 ? 20 : 0);
+    const aboveW = barW - belowW;
+
+    // Draw bar background
+    ctx.fillStyle = '#232423';
+    roundRect(ctx, barX, barY, barW, barH, barR);
+    ctx.fill();
+
+    // Draw segments with clipping
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, barX, barY, barW, barH, barR);
+    ctx.clip();
+
+    // Below (grey) - draw individual segments
+    const segCount = pools.length;
+    const sortedByApy = [...pools].sort((a, b) => a.apy - b.apy);
+    let xOff = barX;
+    for (const p of sortedByApy) {
+        const segW = (p.tvl / totalTvl) * barW;
+        ctx.fillStyle = p.apy < threshold ? '#232423' : gold;
+        ctx.fillRect(xOff, barY, segW + 0.5, barH);
+        // Segment divider
+        ctx.fillStyle = 'rgba(15,16,15,0.6)';
+        ctx.fillRect(xOff, barY, 1, barH);
+        xOff += segW;
+    }
+    ctx.restore();
+
+    // Bar border
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 1;
+    roundRect(ctx, barX, barY, barW, barH, barR);
+    ctx.stroke();
+
+    // Percentage labels on bar
+    if (belowPct >= 8) {
+        ctx.fillStyle = '#FAFAF9';
+        ctx.font = `600 20px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(belowPct + '%', barX + belowW / 2, barY + barH / 2 + 7);
+    }
+    if (abovePct >= 8) {
+        ctx.fillStyle = '#0F100F';
+        ctx.font = `600 20px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(abovePct + '%', barX + belowW + aboveW / 2, barY + barH / 2 + 7);
+    }
+
+    // Threshold line on bar
+    const lineX = barX + belowW;
+    ctx.strokeStyle = '#FAFAF9';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lineX, barY - 4);
+    ctx.lineTo(lineX, barY + barH + 4);
+    ctx.stroke();
+
+    // Range labels below bar
+    ctx.font = `400 13px ${font}`;
+    ctx.fillStyle = '#737372';
+    ctx.textAlign = 'left';
+    ctx.fillText('<' + thresholdStr + '% 7D APY', barX, barY + barH + 24);
+    ctx.textAlign = 'right';
+    ctx.fillText('>' + thresholdStr + '% 7D APY', barX + barW, barY + barH + 24);
+
+    // ── Threshold Slider (visual) ──
+    const sliderY = 380;
+    ctx.fillStyle = '#737372';
+    ctx.font = `400 13px ${font}`;
+    ctx.textAlign = 'left';
+    ctx.fillText('7D APY THRESHOLD', 60, sliderY);
+
+    // Threshold value
+    ctx.fillStyle = gold;
+    ctx.font = `600 22px ${font}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(thresholdStr + ' %', W - 60, sliderY);
+
+    // Slider track
+    const trackY = sliderY + 25;
+    const trackH = 6;
+    const fillPct = threshold / 15;
+    const trackFillW = 1080 * fillPct;
+
+    // Track background
+    ctx.fillStyle = '#2A2B2A';
+    roundRect(ctx, 60, trackY, 1080, trackH, 3);
+    ctx.fill();
+
+    // Track fill (gold)
+    if (trackFillW > 0) {
+        ctx.fillStyle = gold;
+        roundRect(ctx, 60, trackY, trackFillW, trackH, 3);
+        ctx.fill();
+    }
+
+    // Thumb
+    const thumbX = 60 + trackFillW;
+    ctx.fillStyle = '#FAFAF9';
+    ctx.beginPath();
+    ctx.arc(thumbX, trackY + trackH / 2, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Bottom stat box ──
+    const boxY = 440, boxH = 55;
+    ctx.fillStyle = '#171817';
+    roundRect(ctx, 60, boxY, 1080, boxH, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#2A2B2A';
+    ctx.lineWidth = 1;
+    roundRect(ctx, 60, boxY, 1080, boxH, 12);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 16px ${font}`;
+    const line1 = 'Only ';
+    const line1b = abovePct + '%';
+    const line1c = ' of TVL is earning >' + thresholdStr + '% 7D APY.';
+
+    const fullText = line1 + line1b + line1c;
+    const fullW = ctx.measureText(fullText).width;
+    const startX = (W - fullW) / 2;
+
+    ctx.textAlign = 'left';
+    ctx.fillText(line1, startX, boxY + boxH / 2 + 6);
+    const w1 = ctx.measureText(line1).width;
+    ctx.fillStyle = gold;
+    ctx.font = `600 16px ${font}`;
+    ctx.fillText(line1b, startX + w1, boxY + boxH / 2 + 6);
+    const w2 = ctx.measureText(line1b).width;
+    ctx.fillStyle = '#B0B0AE';
+    ctx.font = `400 16px ${font}`;
+    ctx.fillText(line1c, startX + w1 + w2, boxY + boxH / 2 + 6);
+
+    // ── Bottom branding ──
     ctx.fillStyle = '#3A3A39';
     ctx.font = `400 12px ${font}`;
     ctx.textAlign = 'center';
